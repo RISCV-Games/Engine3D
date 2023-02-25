@@ -1,6 +1,12 @@
 # Vector
-.eqv VECTOR_F_X 0
-.eqv VECTOR_F_Y 4
+.eqv VECTOR_S_X 0
+.eqv VECTOR_S_Y 4
 .eqv VECTOR_B_R 5
 .eqv VECTOR_B_G 6
 .eqv VECTOR_B_B 7
+.eqv HALF_S 0x3f000000
+
+# Video
+.eqv SCREEN_WIDTH 320
+.eqv SCREEN_HEIGHT 240
+.eqv SCREEN_BUFFER_ADDRESS 0xFF000000
