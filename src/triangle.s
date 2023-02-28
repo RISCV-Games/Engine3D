@@ -84,3 +84,48 @@ continue_loop1_flat_top_triangle:
 
 ret_flat_top_triangle:
 	ret
+
+
+#########################################################
+# a0 = col0
+# a1 = col1
+# a2 = col2
+#########################################################
+MIX_COLORS:
+	andi t0, a0, 7
+	andi t1, a1, 7
+	andi t2, a2, 7
+	add t0, t0, t1
+	add t0, t0, t2
+	li t1, 3
+	div t0, t0, t1
+
+	andi t1, a0, 56
+	srli t1, t1, 3
+	andi t2, a1, 56
+	srli t2, t2, 3
+	andi t3, a2, 56
+	srli t3, t3, 3
+	add t1, t1, t2
+	add t1, t1, t3
+	li t2, 3
+	div t1, t1, t2
+	slli t1, t1, 3
+
+	andi t2, a0, 0xc0
+	srli t2, t2, 6
+	andi t3, a1, 0xc0
+	srli t3, t3, 6
+	andi t4, a2, 0xc0
+	srli t4, t4, 6
+	add t2, t2, t3
+	add t2, t2, t4
+	li t3, 3
+	div t2, t2, t3
+	slli t2, t2, 6
+
+	add a0, t0, t1
+	add a0, a0, t2
+
+	ret
+

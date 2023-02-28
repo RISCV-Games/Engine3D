@@ -1,9 +1,7 @@
 # Vector
 .eqv VECTOR_S_X 0
 .eqv VECTOR_S_Y 4
-.eqv VECTOR_B_R 5
-.eqv VECTOR_B_G 6
-.eqv VECTOR_B_B 7
+.eqv VECTOR
 .eqv HALF_S 0x3f000000
 
 # Video
