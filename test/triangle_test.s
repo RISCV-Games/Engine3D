@@ -2,7 +2,7 @@
 
 .data
 v1: .float 5 5
-v2: .float 200 5
+v2: .float 200 150
 v3: .float 310 150
 
 TIME: .word 0
@@ -15,7 +15,7 @@ Loop:
   la a1, v1
   la a2, v2
   la a3, v3
-  call FLAT_TOP_TRIANGLE
+  call FLAT_BOTTOM_TRIANGLE
 
   csrr t0, cycle
   la t1, TIME
