@@ -140,51 +140,7 @@ FLAT_BOTTOM_TRIANGLE:
 
 	fmv.s ft6, ft2
 
-loop1_flat_bottom_triangle:
-	# if y >= (int)v3.y then break
-	flw ft2, VECTOR_S_Y(a3)
-	fcvt.w.s t1, ft2
-	bge t0, t1, ret_flat_top_triangle
-
-	# t1 = iXStart = (int) fXStart
-	fcvt.w.s t1, ft5
-
-	# t2 = iXEnd = (int) fXEnd
-	fcvt.w.s t2, ft6
-
-loop2_flat_bottom_triangle:
-	# if x >= xEnd then break
-	bge t1, t2, break_loop2_flat_top_triangle
-
-	# pixels[x][y] = white 
-	li t3, SCREEN_WIDTH
-	mul t3, t0, t3
-	add t3, t3, t1
-	li t4, SCREEN_BUFFER_ADDRESS
-	slli t5, a0, 20
-	add t4, t4, t5
-	add t3, t4, t3
-	li t4, 0xFF
-	sb t4, 0(t3)
-
-	# x++
-	addi t1, t1, 1
-	j loop2_flat_top_triangle
-
-break_loop2_flat_bottom_triangle:
-	# xStart += m0
-	fadd.s ft5, ft5, ft0
-
-	# xEnd += m1
-	fadd.s ft6, ft6, ft1
-
-continue_loop1_flat_bottom_triangle:
-	# y++
-	addi t0, t0, 1
 	j loop1_flat_top_triangle
-
-ret_flat_bottom_triangle:
-	ret
 
 #########################################################
 # a0 = col0
