@@ -1,5 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
+import os
+import sys
+
 
 @dataclass(frozen=True)
 class Vertex:
@@ -70,12 +73,28 @@ def load_file(file_path: str) -> str:
 
     return content
 
+def usage() -> None:
+    print("USAGE:")
+    print("     python objToAsm.py <input_path> <output_path>")
+
+def get_relative_name(file_path: str) -> str:
+    return "".join(
+            file_path.split(os.sep)[-1]
+            .split(".")[:-1]
+        )
 
 def main():
-    content = load_file("humanoid_tri.obj")
+    if len(sys.argv) < 3:
+        usage()
+        exit(1)
 
+    input_path = sys.argv[1]
+    output_path = sys.argv[2]
+    content = load_file(input_path)
     mesh = Mesh.from_string(content)
-    mesh.dump_to_asm("teste.asm", "humanoid")
+
+    name = get_relative_name(output_path)
+    mesh.dump_to_asm(output_path, name)
 
 if __name__ == "__main__":
     main()

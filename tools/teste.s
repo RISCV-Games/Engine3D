@@ -1,3 +1,0 @@
-.data
-MESH_HUMANOID_TRI: .float 10, 10, 10, 20, 20, 20, 30, 30, 30
-MESH_HUMANOID_FACES: .word 0, 1
