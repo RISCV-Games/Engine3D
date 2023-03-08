@@ -5,6 +5,14 @@
   fsw %z, VECTOR3_F_Z(%addr)
 .end_macro
 
+.macro PIXEL(%reg, %x, %y)
+  li %reg, SCREEN_WIDTH  
+  mul %reg, %reg, %y
+  add %reg, %reg, %x
+  li t6, SCREEN_BUFFER_ADDRESS
+  add %reg, %reg, t6
+.end_macro
+
 .macro SWAP(%temp, %a, %b)
   mv %temp, %a
   mv %a, %b
@@ -51,43 +59,6 @@ TRIANGLE:
   .space TRIANGLE_BYTE_SIZE
 
 .text
-#########################################################
-# a0 = addr
-# a1 = v1
-# a2 = v2
-# a3 = v3
-#########################################################
-MAKE_TRIANGLE:
-  li t1, 0 
-  li t2, 1
-  li t3, 2
-
-  lw t4, VECTOR2_F_Y(a1)
-  lw t5, VECTOR2_F_Y(a3)
-  bge t5, t4, make_triangle_no_swap_13
-
-  # Swap 1-3
-  SWAP(t4, a1, a3)
-  SWAP(t4, t1, t3)
-
-make_triangle_no_swap_13:
-  lw t4, VECTOR2_F_Y(a2)
-  lw t5, VECTOR2_F_Y(a3)
-  bge t5, t4, make_triangle_no_swap_23
-
-  # Swap 2 - 3
-  SWAP(t4, a2, a3)
-  SWAP(t4, t2, t3)
-
-make_triangle_no_swap_23:
-  lw t4, VECTOR2_F_Y(a1)
-  lw t5, VECTOR2_F_Y(a2)
-  bge t5, t4, make_triangle_no_swap_12
-  SWAP(t4, a1, a2)
-  SWAP(t4, t1, t2)
-  
-make_triangle_no_swap_12:
-  ret
 
 MAIN:
   # Loop mesh
@@ -165,22 +136,19 @@ main_mesh_loop:
   addi a0, a0, VECTOR2_BYTE_SIZE
   jal PROJECT_SCREEN_WORD
 
-  addi s1, s1, 1
-  j main_mesh_loop
-
   la a0, TRIANGLE
-  la a1, V1
-  la a2, V2
-  la a3, V3
+  la a1, VECTOR2s
+  addi a2, a1, VECTOR2_BYTE_SIZE
+  addi a3, a2, VECTOR2_BYTE_SIZE
   jal MAKE_TRIANGLE
 
   la a0, TRIANGLE
-  call GET_VERT_BOUND
+  jal GET_VERT_BOUND
   mv s2, a0
   mv s3, a1
 
 main_vert_loop:
-  bgt s2, s3, main_mesh_loop_end
+  bgt s2, s3, main_vert_loop_end
 
   la a0, TRIANGLE
   mv a1, s2
@@ -189,15 +157,29 @@ main_vert_loop:
   mv s5, a1
 
   main_horz_loop:
+    bgt s4, s5, main_horz_loop_end
+
+    # la a0, TRIANGLE
+    # mv a1, s4
+    # mv a2, s2
+    # jal TRIANGLE_BARYCENTRIC
+    PIXEL(t0, s4, s2)
+    li t1, 0x2828
+    sb t1, 0(t0)
     
+    addi s4, s4, 1
     j main_horz_loop
 
+main_horz_loop_end:
+  addi s2, s2 ,1
   j main_vert_loop
 
-main_mesh_loop_end:
-  li a7, 10
-  ecall
+main_vert_loop_end:
+  addi s1, s1, 1
+  j main_mesh_loop
 
+main_mesh_loop_end:
+  j MAIN
 
 #########################################################
 # a0 = Vector3_SRC
@@ -236,6 +218,125 @@ PROJECT_SCREEN_WORD:
   fmul.s ft0, ft0, ft2
   fmul.s ft1, ft1, ft3
 
+  li t0, 2
+  fcvt.s.w ft2, t0
+  fdiv.s ft0, ft0, ft2
+  fdiv.s ft1, ft1, ft2
+
   fsw ft0, VECTOR2_F_X(a0)
   fsw ft1, VECTOR2_F_Y(a0)
   ret
+
+#########################################################
+# a0 = addr
+# a1 = v1
+# a2 = v2
+# a3 = v3
+#########################################################
+MAKE_TRIANGLE:
+  li t1, 0 
+  li t2, 1
+  li t3, 2
+
+  lw t4, VECTOR2_F_Y(a1)
+  lw t5, VECTOR2_F_Y(a3)
+  bge t5, t4, make_triangle_no_swap_13
+
+  # Swap 1-3
+  SWAP(t4, a1, a3)
+  SWAP(t4, t1, t3)
+
+make_triangle_no_swap_13:
+  lw t4, VECTOR2_F_Y(a2)
+  lw t5, VECTOR2_F_Y(a3)
+  bge t5, t4, make_triangle_no_swap_23
+
+  # Swap 2 - 3
+  SWAP(t4, a2, a3)
+  SWAP(t4, t2, t3)
+
+make_triangle_no_swap_23:
+  lw t4, VECTOR2_F_Y(a1)
+  lw t5, VECTOR2_F_Y(a2)
+  bge t5, t4, make_triangle_no_swap_12
+  SWAP(t4, a1, a2)
+  SWAP(t4, t1, t2)
+  
+make_triangle_no_swap_12:
+  sw a1, TRIANGLE_W_V1(a0)
+  sw a2, TRIANGLE_W_V2(a0)
+  sw a3, TRIANGLE_W_V3(a0)
+  sb t1, TRIANGLE_B_ORDER0(a0)
+  sb t2, TRIANGLE_B_ORDER1(a0)
+  sb t3, TRIANGLE_B_ORDER2(a0)
+  ret
+
+#########################################################
+# a0 = triangule
+# a1 = xp
+# a2 = yp
+#########################################################
+TRIANGLE_BARYCENTRIC:
+  mv a6, a1
+  mv a7, a2
+
+  lw t0, TRIANGLE_W_V1(a0)
+  lw t1, TRIANGLE_W_V2(a0)
+  lw t2, TRIANGLE_W_V3(a0)
+
+  flw fa0, VECTOR2_F_X(t0)
+  flw fa1, VECTOR2_F_Y(t0)
+  flw fa2, VECTOR2_F_X(t1)
+  flw fa3, VECTOR2_F_Y(t1)
+  flw fa4, VECTOR2_F_X(t2)
+  flw fa5, VECTOR2_F_Y(t2)
+
+  fcvt.w.s a0, fa0
+  fcvt.w.s a1, fa1
+  fcvt.w.s a2, fa2
+  fcvt.w.s a3, fa3
+  fcvt.w.s a4, fa4
+  fcvt.w.s a5, fa5
+
+  j BARYCENTRIC
+
+#########################################################
+# a0 = triangule
+#########################################################
+# a0 = ly
+# a1 = hy
+#########################################################
+GET_VERT_BOUND:
+  lw t0, TRIANGLE_W_V1(a0)
+  lw t1, TRIANGLE_W_V3(a0)
+
+  flw ft0, VECTOR2_F_Y(t0)
+  flw ft1, VECTOR2_F_Y(t1)
+
+  fcvt.w.s a0, ft0
+  fcvt.w.s a1, ft1
+
+  bge a0, zero, get_vert_bound_no_negative_l
+  mv a0, zero
+get_vert_bound_no_negative_l:
+  li t0, SCREEN_HEIGHT
+  bge a0, t0, get_vert_bound_error
+
+  blt a1, t0, get_vert_bound_no_bigger_h
+  li a1, SCREEN_HEIGHT
+  addi a1, a1, -1
+get_vert_bound_no_bigger_h:
+  blt a1, zero, get_vert_bound_error
+  ret
+
+get_vert_bound_error:
+  li a0, 1
+  li a1, 0
+  ret
+
+GET_HORZ_BOUND:
+  li a0, 10
+  li a1, 60
+  ret
+
+.include "../src/barycentric.s"

@@ -8,9 +8,10 @@
 # a6 = xp
 # a7 = yp
 #########################################################
-# float det = (x1 - x3) * (y2 - y3) - (x2 - x3) * (y1 - y3);
-# u1 = ((y2 - y3) * (xp - x3) + (x3 - x2) * (yp - y3))/det;
-# u2 = ((y3 - y1) * (xp - x3) + (x1 - x3) * (yp - y3))/det;
+# a0 = u1
+# a1 = u2
+# a2 = u3
+#########################################################
 BARYCENTRIC:
   sub     t1, a0, a4
   sub     a3, a3, a5
@@ -33,4 +34,9 @@ BARYCENTRIC:
   add     a0, a0, a1
   fcvt.s.w        ft2, a0
   fdiv.s  fa1, ft2, ft0
+  
+  li t0, 1
+  fcvt.s.w fa2, t0
+  fsub.s fa2, fa2, fa0
+  fsub.s fa2, fa2, fa1
   ret
