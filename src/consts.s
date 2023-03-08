@@ -1,3 +1,7 @@
+# Video
+.eqv CURRENT_DISPLAY_FRAME_ADRESS 0xFF200604
+.eqv BUFFER_ADRESS 0xFF000000
+
 # Vector
 .eqv VECTOR_S_X 0
 .eqv VECTOR_S_Y 4
@@ -8,6 +12,7 @@
 .eqv PI_S      0x40490fdb
 .eqv TWO_PI_S  0x40c90fdb
 .eqv HALF_PI_S 0x3fc90fdb
+.eqv EPSILON   0x3727c5ac
 
 # Video
 .eqv SCREEN_WIDTH 320

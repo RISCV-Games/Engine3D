@@ -7,6 +7,13 @@ PROJECT_3D_2D:
   flw ft1, VECTOR3_F_Y(a0)
   flw ft2, VECTOR3_F_Z(a0)
 
+  fneg.s ft4, ft3
+  fmax.s ft2, ft2, ft4
+
+  li t0, EPSILON
+  fmv.s.x ft4, t0
+  fadd.s ft2, ft2, ft4
+
   fdiv.s ft0, ft0, ft2
   fdiv.s ft1, ft1, ft2
 

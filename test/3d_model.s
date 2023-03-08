@@ -1,10 +1,14 @@
+
 .include "../src/consts.s"
 .include "../src/macros.s"
 
 .data
+.include "../src/data.s"
 #.include "../data/triangle.data"
 #.include "../data/humanoid.data"
-.include "../data/triangle2.data"
+#.include "../data/triangle2.data"
+#.include "../data/cube.data"
+.include "../data/cup.data"
 
 .align 2
 VECTOR3s:
@@ -18,6 +22,7 @@ TRIANGLE:
   .space TRIANGLE_BYTE_SIZE
 
 .text
+  jal INIT_VIDEO
 MAIN:
   # Clear background
   li a0, 0xFFFFFFFF
@@ -110,8 +115,11 @@ main_mesh_loop:
   li t0, 0
   fcvt.s.w fa0, t0# fa0 = 0
   fcvt.s.w fa1, t0# fa1 = 0
-  li t0, 3
-  fcvt.s.w fa2, t0# fa2 = 1
+  li t0, HALF_S
+  fmv.s.x fa2, t0
+  li t0, 1
+  fcvt.s.w ft0, t0
+  fadd.s fa2, fa2, ft0 # fa2 = 1
   jal TRANSLATE
 
   # Translating V2
@@ -120,8 +128,11 @@ main_mesh_loop:
   li t0, 0
   fcvt.s.w fa0, t0# fa0 = 0
   fcvt.s.w fa1, t0# fa1 = 0
-  li t0, 3
-  fcvt.s.w fa2, t0# fa2 = 1
+  li t0, HALF_S
+  fmv.s.x fa2, t0
+  li t0, 1
+  fcvt.s.w ft0, t0
+  fadd.s fa2, fa2, ft0 # fa2 = 1
   jal TRANSLATE
 
   # Translating V3
@@ -131,8 +142,11 @@ main_mesh_loop:
   li t0, 0
   fcvt.s.w fa0, t0# fa0 = 0
   fcvt.s.w fa1, t0# fa1 = 0
-  li t0, 3
-  fcvt.s.w fa2, t0# fa2 = 1
+  li t0, HALF_S
+  fmv.s.x fa2, t0
+  li t0, 1
+  fcvt.s.w ft0, t0
+  fadd.s fa2, fa2, ft0 # fa2 = 1
   jal TRANSLATE
 
   # Projecting to 2D
@@ -214,8 +228,10 @@ main_mesh_loop_end:
 #   ecall
 #   li a7, 10
 #   ecall
+  jal SWAP_FRAMES
   j MAIN
 
 .include "../src/math.s"
 .include "../src/draw.s"
 .include "../src/graphics.s"
+.include "../src/video.s"

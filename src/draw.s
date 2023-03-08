@@ -1,8 +1,5 @@
-#############################
-# a0 = color
-#############################
 DRAW_BACKGROUND:
-	li t0, SCREEN_BUFFER_ADDRESS
+	GET_BUFFER_TO_DRAW(t0)
 	li t1, NUMBER_OF_PIXELS
 	add t1, t0, t1
 

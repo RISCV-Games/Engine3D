@@ -74,14 +74,15 @@ class Mesh:
         def normalize_range(
                 num: float, 
                 old_min: float, old_max: float, 
-                new_min: float, new_max: float) -> float:
+                new_min: float, new_max: float,
+                scaler: float) -> float:
 
             if (old_max - old_min) == 0:
                 return (new_min+new_max)/2
 
-            return (
+            return ((
                     (new_max - new_min)*(num - old_min)/(old_max - old_min)
-                   ) + new_min
+                   ) + new_min) *scaler 
 
         max_x = max(v.x for v in mesh.vertices)
         min_x = min(v.x for v in mesh.vertices)
@@ -90,9 +91,9 @@ class Mesh:
         max_z = max(v.z for v in mesh.vertices)
         min_z = min(v.z for v in mesh.vertices)
 
-        normalize_x = lambda num: normalize_range(num, min_x, max_x, -1, 1)
-        normalize_y = lambda num: normalize_range(num, min_y, max_y, -1, 1)
-        normalize_z = lambda num: normalize_range(num, min_z, max_z, 0, 1)
+        normalize_x = lambda num: normalize_range(num, min_x, max_x, -1, 1, 0.5)
+        normalize_y = lambda num: normalize_range(num, min_y, max_y, -1, 1, 0.5)
+        normalize_z = lambda num: normalize_range(num, min_z, max_z, -1, 1, 0.5)
 
         return Mesh(
                 vertices=[
