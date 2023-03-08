@@ -84,7 +84,7 @@ class Mesh:
 
         return Mesh(
                 vertices=[
-                    Vertex(x=v.x/n_x, y=v.y/n_y, z=(v.z/n_z) + 1)
+                    Vertex(x=v.x/n_x, y=v.y/n_y, z=v.z/n_z)
                     for v in mesh.vertices
                     ],
                 faces=mesh.faces

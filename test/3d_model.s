@@ -113,6 +113,37 @@ main_mesh_loop:
   flw ft2, 8(t3)
   MAKE_VECTOR3(t4, ft0, ft1, ft2)
 
+  # Rotating
+  la a0, VECTOR3s
+  jal ROTATE_IN_Y
+
+  # Translating V1
+  la a0, VECTOR3s
+  li t0, 0
+  fcvt.s.w fa0, t0# fa0 = 0
+  fcvt.s.w fa1, t0# fa1 = 0
+  li t0, 1
+  fcvt.s.w fa2, t0# fa2 = 1
+  jal TRANSLATE
+
+  # Translating V2
+  addi a0, a0, VECTOR3_BYTE_SIZE
+  li t0, 0
+  fcvt.s.w fa0, t0# fa0 = 0
+  fcvt.s.w fa1, t0# fa1 = 0
+  li t0, 1
+  fcvt.s.w fa2, t0# fa2 = 1
+  jal TRANSLATE
+
+  # Translating V3
+  addi a0, a0, VECTOR3_BYTE_SIZE
+  li t0, 0
+  fcvt.s.w fa0, t0# fa0 = 0
+  fcvt.s.w fa1, t0# fa1 = 0
+  li t0, 1
+  fcvt.s.w fa2, t0# fa2 = 1
+  jal TRANSLATE
+
   # Projecting to 2D
   la a0, VECTOR3s
   la a1, VECTOR2s
@@ -179,6 +210,10 @@ main_vert_loop_end:
   j main_mesh_loop
 
 main_mesh_loop_end:
+  li a7, 5
+  ecall
+  li a7, 10
+  ecall
   j MAIN
 
 #########################################################
@@ -238,30 +273,34 @@ MAKE_TRIANGLE:
   li t2, 1
   li t3, 2
 
-  lw t4, VECTOR2_F_Y(a1)
-  lw t5, VECTOR2_F_Y(a3)
-  bge t5, t4, make_triangle_no_swap_13
+  flw ft0, VECTOR2_F_Y(a1)
+  flw ft1, VECTOR2_F_Y(a3)
+  flt.s t4, ft0, ft1 
+  bgt t4, zero, make_triangle_no_swap_13
 
   # Swap 1-3
   SWAP(t4, a1, a3)
   SWAP(t4, t1, t3)
 
 make_triangle_no_swap_13:
-  lw t4, VECTOR2_F_Y(a2)
-  lw t5, VECTOR2_F_Y(a3)
-  bge t5, t4, make_triangle_no_swap_23
+  flw ft0, VECTOR2_F_Y(a2)
+  flw ft1, VECTOR2_F_Y(a3)
+  flt.s t4, ft0, ft1 
+  bgt t4, zero, make_triangle_no_swap_23
 
   # Swap 2 - 3
   SWAP(t4, a2, a3)
   SWAP(t4, t2, t3)
 
 make_triangle_no_swap_23:
-  lw t4, VECTOR2_F_Y(a1)
-  lw t5, VECTOR2_F_Y(a2)
-  bge t5, t4, make_triangle_no_swap_12
+  flw ft0, VECTOR2_F_Y(a1)
+  flw ft1, VECTOR2_F_Y(a2)
+  flt.s t4, ft0, ft1 
+  bgt t4, zero, make_triangle_no_swap_12
+
+  # Swap 1 2
   SWAP(t4, a1, a2)
   SWAP(t4, t1, t2)
-  
 make_triangle_no_swap_12:
   sw a1, TRIANGLE_W_V1(a0)
   sw a2, TRIANGLE_W_V2(a0)
@@ -280,9 +319,23 @@ TRIANGLE_BARYCENTRIC:
   mv a6, a1
   mv a7, a2
 
-  lw t0, TRIANGLE_W_V1(a0)
-  lw t1, TRIANGLE_W_V2(a0)
-  lw t2, TRIANGLE_W_V3(a0)
+  li t3, 4
+
+  lb t4, TRIANGLE_B_ORDER0(a0)
+  mul t4, t4, t3
+  add t4, t4, a0
+
+  lb t5, TRIANGLE_B_ORDER1(a0)
+  mul t5, t5, t3
+  add t5, t5, a0
+
+  lb t6, TRIANGLE_B_ORDER2(a0)
+  mul t6, t6, t3
+  add t6, t6, a0
+
+  lw t0, 0(t4)
+  lw t1, 0(t5)
+  lw t2, 0(t6)
 
   flw fa0, VECTOR2_F_X(t0)
   flw fa1, VECTOR2_F_Y(t0)
@@ -299,6 +352,38 @@ TRIANGLE_BARYCENTRIC:
   fcvt.w.s a5, fa5
 
   j BARYCENTRIC
+
+
+#########################################################
+# a0 = vector3
+# fa0 = x
+# fa1 = y
+# fa2 = z
+#########################################################
+TRANSLATE:
+  # X
+  flw ft0, VECTOR3_F_X(a0)
+  fadd.s ft0, ft0, fa0
+  fsw ft0, VECTOR3_F_X(a0)
+
+  # Y
+  flw ft1, VECTOR3_F_Y(a0)
+  fadd.s ft1, ft1, fa1
+  fsw ft1, VECTOR3_F_Y(a0)
+
+  # Z
+  flw ft2, VECTOR3_F_Z(a0)
+  fadd.s ft2, ft2, fa2
+  fsw ft2, VECTOR3_F_Z(a0)
+
+  ret
+
+#########################################################
+# a0 = vector3
+# fa0 = angle
+#########################################################
+ROTATE_IN_Y:
+  ret
 
 #########################################################
 # a0 = triangule
