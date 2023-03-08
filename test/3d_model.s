@@ -24,6 +24,22 @@
   fsw %y, VECTOR2_F_Y(%addr)
 .end_macro
 
+.macro GET_LINE_X(%x0, %x1, %y0, %y1)
+	fmv.s ft0, %x0
+	fmv.s ft1, %x1
+	fmv.s ft2, %y0
+	fmv.s ft3, %y1
+
+	# fa0 = (ft0*(fa1-ft3) + ft1*(ft2-fa1)) / (u-v)
+	fsub.s fa0, fa1, ft3 
+	fmul.s fa0, fa0, ft0
+	fsub.s ft4, ft2, fa1
+	fmul.s ft4, ft4, ft1
+	fadd.s fa0, fa0, ft4
+	fsub.s ft4, ft2, ft3
+	fdiv.s fa0, fa0, ft4
+.end_macro
+
 .data
 .include "../data/humanoid.data"
 
@@ -334,24 +350,128 @@ get_vert_bound_error:
   li a1, 0
   ret
 
+# pseudocode for GET_HORZ_BOUND function
+# if v0.y == v1.y
+# 	xStart = get(v0, v2)
+# 	xEnd = get(v1,v2)
+# else if v1.y == v2.y
+# 	xStart = get(v0, v1)
+# 	xEnd = get(v0,v2)
+# else if y < v1.y
+# 	xStart = get(v0, v1)
+# 	xEnd = get(v0, v2)
+# else 
+# 	xStart = get(v1, v2)
+# 	xEnd = get(v0, v2)
+#
+# if xStart > xEnd
+# 	swap(xstart, xEnd)
+#
+# xStart = min(max(xStart, 0), width)
+# xEnd = max(min(xEnd, width), 0)
+
+
+
 #####################
 # a0 = triangle
 # a1 = y
 #####################
 GET_HORZ_BOUND:
-	# alphaSplit = 
 
 	lw t0, TRIANGLE_W_V1(a0)
 	lw t1, TRIANGLE_W_V2(a0)
 	lw t2, TRIANGLE_W_V3(a0)
 
-	flw ft0, VECTOR2_F_Y(t0)
-	flw ft1, VECTOR2_F_Y(t1)
-	flw ft2, VECTOR2_F_Y(t2)
+	flw ft5, VECTOR2_F_X(t0)
+	flw ft6, VECTOR2_F_X(t1)
+	flw ft7, VECTOR2_F_X(t2)
+	flw ft8, VECTOR2_F_Y(t0)
+	flw ft9, VECTOR2_F_Y(t1)
+	flw ft10, VECTOR2_F_Y(t2)
 
-	# ft3 = v1.y - v0.y
-	fsub.s ft3, ft1, ft0
-	fsub.s ft4, ft2, ft0
-	fdiv.s
+	# fa1 = y
+	fcvt.s.w fa1, a1
+
+	# fa2, fa3 = xStart xEnd
+
+	# if v0.y == v1.y
+	feq.s t0, ft8, ft9 
+	beq t0, zero, get_horz_bound_notif1
+
+	# get(v0, v2)
+	GET_LINE_X(ft5, ft7, ft8, ft10)
+	fmv.s fa2, fa0
+
+	# get(v1,v2)
+	GET_LINE_X(ft6, ft7, ft9, ft10)
+	fmv.s fa3, fa0
+
+	j get_horz_bound_end
+
+get_horz_bound_notif1:
+	# if v1.y == v2.y 
+	feq.s t0, ft9, ft10
+	beq t0, zero, get_horz_bound_notif2
+
+	# get(v0, v1)
+	GET_LINE_X(ft5, ft6, ft8, ft9)
+	fmv.s fa2, fa0
+
+	# get(v0,v2)
+	GET_LINE_X(ft5, ft7, ft8, ft10)
+	fmv.s fa3, fa0
+
+	j get_horz_bound_end
+get_horz_bound_notif2:
+	# if y < v1.y
+	flt.s t0, fa1, ft9
+	beq t0, zero, get_horz_bound_notif3
+
+	# get(v0, v1)
+	GET_LINE_X(ft5, ft6, ft8, ft9)
+	fmv.s fa2, fa0
+
+	# get(v0,v2)
+	GET_LINE_X(ft5, ft7, ft8, ft10)
+	fmv.s fa3, fa0
+
+	j get_horz_bound_end
+get_horz_bound_notif3:
+	# get(v1, v2)
+	GET_LINE_X(ft6, ft7, ft9, ft10)
+	fmv.s fa2, fa0
+
+	# get(v0,v2)
+	GET_LINE_X(ft5, ft7, ft8, ft10)
+	fmv.s fa3, fa0
+
+	j get_horz_bound_end
+
+get_horz_bound_end:
+	# fa0 = xStart
+	fmin.s fa0, fa2, fa3
+	# fa1 = xEnd
+	fmax.s fa1, fa2, fa3
+
+	# ft0 = SCREEN_WIDTH
+	li t0, SCREEN_WIDTH
+	addi t0, t0, -1
+	fcvt.s.w ft0, t0
+
+	# ft2 = 0.0
+	fmv.s.x ft2, zero
+
+	# bound xStart to screen
+	fmax.s fa0, fa0, ft2
+	fmin.s fa0, fa0, ft0
+
+	# bound xEnd to screen
+	fmin.s fa1, fa1, ft0
+	fmax.s fa1, fa1, ft2
+
+	fcvt.w.s a0, fa0
+	fcvt.w.s a1, fa1
+
+	ret
 
 .include "../src/barycentric.s"
