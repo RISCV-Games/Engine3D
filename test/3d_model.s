@@ -334,9 +334,24 @@ get_vert_bound_error:
   li a1, 0
   ret
 
+#####################
+# a0 = triangle
+# a1 = y
+#####################
 GET_HORZ_BOUND:
-  li a0, 10
-  li a1, 60
-  ret
+	# alphaSplit = 
+
+	lw t0, TRIANGLE_W_V1(a0)
+	lw t1, TRIANGLE_W_V2(a0)
+	lw t2, TRIANGLE_W_V3(a0)
+
+	flw ft0, VECTOR2_F_Y(t0)
+	flw ft1, VECTOR2_F_Y(t1)
+	flw ft2, VECTOR2_F_Y(t2)
+
+	# ft3 = v1.y - v0.y
+	fsub.s ft3, ft1, ft0
+	fsub.s ft4, ft2, ft0
+	fdiv.s
 
 .include "../src/barycentric.s"
