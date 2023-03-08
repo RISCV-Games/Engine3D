@@ -25,7 +25,7 @@
 .end_macro
 
 .data
-.include "../data/humanoid.data"
+.include "../data/triangle.data"
 
 .eqv NUMBER_OF_PIXELS 0x12C00
 # Vectors 3
@@ -128,6 +128,7 @@ main_mesh_loop:
   jal ROTATE_IN_Y
 
   # Rotating V2
+  la a0, VECTOR3s
   addi a0, a0, VECTOR3_BYTE_SIZE
   csrr t0, time
   li t1, 1000
@@ -137,6 +138,8 @@ main_mesh_loop:
   jal ROTATE_IN_Y
 
   # Rotating V3
+  la a0, VECTOR3s
+  addi a0, a0, VECTOR3_BYTE_SIZE
   addi a0, a0, VECTOR3_BYTE_SIZE
   csrr t0, time
   li t1, 1000
@@ -155,6 +158,7 @@ main_mesh_loop:
   jal TRANSLATE
 
   # Translating V2
+  la a0, VECTOR3s
   addi a0, a0, VECTOR3_BYTE_SIZE
   li t0, 0
   fcvt.s.w fa0, t0# fa0 = 0
@@ -164,6 +168,8 @@ main_mesh_loop:
   jal TRANSLATE
 
   # Translating V3
+  la a0, VECTOR3s
+  addi a0, a0, VECTOR3_BYTE_SIZE
   addi a0, a0, VECTOR3_BYTE_SIZE
   li t0, 0
   fcvt.s.w fa0, t0# fa0 = 0
@@ -177,11 +183,17 @@ main_mesh_loop:
   la a1, VECTOR2s
   jal PROJECT_3D_2D
 
+  la a0, VECTOR3s
+  la a1, VECTOR2s
   addi a0, a0, VECTOR3_BYTE_SIZE
   addi a1, a1, VECTOR2_BYTE_SIZE
   jal PROJECT_3D_2D
 
+  la a0, VECTOR3s
+  la a1, VECTOR2s
   addi a0, a0, VECTOR3_BYTE_SIZE
+  addi a0, a0, VECTOR3_BYTE_SIZE
+  addi a1, a1, VECTOR2_BYTE_SIZE
   addi a1, a1, VECTOR2_BYTE_SIZE
   jal PROJECT_3D_2D
 
@@ -189,9 +201,12 @@ main_mesh_loop:
   la a0, VECTOR2s
   jal PROJECT_SCREEN_WORD
 
+  la a0, VECTOR2s
   addi a0, a0, VECTOR2_BYTE_SIZE
   jal PROJECT_SCREEN_WORD
 
+  la a0, VECTOR2s
+  addi a0, a0, VECTOR2_BYTE_SIZE
   addi a0, a0, VECTOR2_BYTE_SIZE
   jal PROJECT_SCREEN_WORD
 

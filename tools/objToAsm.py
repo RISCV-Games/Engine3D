@@ -27,12 +27,12 @@ class Mesh:
         faces = []
 
         def add_vertex(points: list[str]) -> None:
-            f_points = [float(p) for p in points]
+            f_points = [float(p) for p in points if p.strip()]
             vertices.append(
                     Vertex(x=f_points[0], y=f_points[1], z=f_points[2]))
 
         def add_face(indexes: list[str]) -> None:
-            i_indexes = [int(i) - 1 for i in indexes]
+            i_indexes = [int(i) - 1 for i in indexes if i.strip()]
             faces.append(
                     Face(a=i_indexes[0], b=i_indexes[1], c=i_indexes[2]))
 
@@ -59,7 +59,7 @@ class Mesh:
         v_str = ",".join([f"{v.x},{v.y},{v.z}" for v in self.vertices])
         vertices_str = f"MESH_VERT: .float {v_str}\n"
 
-        f_str = ",".join([f"{f.a * 3},{f.b * 3},{f.c * 3}" for f in self.faces])
+        f_str = ",".join([f"{f.a},{f.b},{f.c}" for f in self.faces])
         faces_str = f"MESH_FACE: .word {f_str}\n"
         size_str =  f"MESH_SIZE: .word {len(self.faces)}\n"
 
@@ -71,6 +71,18 @@ class Mesh:
 
     @staticmethod
     def normalized(mesh: Mesh) -> Mesh:
+        def normalize_range(
+                num: float, 
+                old_min: float, old_max: float, 
+                new_min: float, new_max: float) -> float:
+
+            if (old_max - old_min) == 0:
+                return (new_min+new_max)/2
+
+            return (
+                    (new_max - new_min)*(num - old_min)/(old_max - old_min)
+                   ) + new_min
+
         max_x = max(v.x for v in mesh.vertices)
         min_x = min(v.x for v in mesh.vertices)
         max_y = max(v.y for v in mesh.vertices)
@@ -78,13 +90,13 @@ class Mesh:
         max_z = max(v.z for v in mesh.vertices)
         min_z = min(v.z for v in mesh.vertices)
 
-        n_x = max(abs(max_x), abs(min_x))
-        n_y = max(abs(max_y), abs(min_y))
-        n_z = max(abs(max_z), abs(min_z))
+        normalize_x = lambda num: normalize_range(num, min_x, max_x, -1, 1)
+        normalize_y = lambda num: normalize_range(num, min_y, max_y, -1, 1)
+        normalize_z = lambda num: normalize_range(num, min_z, max_z, 0, 1)
 
         return Mesh(
                 vertices=[
-                    Vertex(x=v.x/n_x, y=v.y/n_y, z=v.z/n_z)
+                    Vertex(x=normalize_x(v.x), y=normalize_y(v.y), z=normalize_z(v.z))
                     for v in mesh.vertices
                     ],
                 faces=mesh.faces
