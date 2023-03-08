@@ -27,6 +27,7 @@
 .data
 .include "../data/humanoid.data"
 
+.eqv NUMBER_OF_PIXELS 0x12C00
 # Vectors 3
 .eqv VECTOR3_BYTE_SIZE 12
 .eqv VECTOR3_F_X 0
@@ -61,6 +62,10 @@ TRIANGLE:
 .text
 
 MAIN:
+  # Clear background
+  li a0, 0xFFFFFFFF
+  jal DRAW_BACKGROUND
+
   # Loop mesh
   la t0, MESH_SIZE
   lw s0, 0(t0)
@@ -113,8 +118,31 @@ main_mesh_loop:
   flw ft2, 8(t3)
   MAKE_VECTOR3(t4, ft0, ft1, ft2)
 
-  # Rotating
+  # Rotating V1
   la a0, VECTOR3s
+  csrr t0, time
+  li t1, 1000
+  fcvt.s.w fa0, t0
+  fcvt.s.w ft0, t1
+  fdiv.s fa0, fa0, ft0
+  jal ROTATE_IN_Y
+
+  # Rotating V2
+  addi a0, a0, VECTOR3_BYTE_SIZE
+  csrr t0, time
+  li t1, 1000
+  fcvt.s.w fa0, t0
+  fcvt.s.w ft0, t1
+  fdiv.s fa0, fa0, ft0
+  jal ROTATE_IN_Y
+
+  # Rotating V3
+  addi a0, a0, VECTOR3_BYTE_SIZE
+  csrr t0, time
+  li t1, 1000
+  fcvt.s.w fa0, t0
+  fcvt.s.w ft0, t1
+  fdiv.s fa0, fa0, ft0
   jal ROTATE_IN_Y
 
   # Translating V1
@@ -382,7 +410,46 @@ TRANSLATE:
 # a0 = vector3
 # fa0 = angle
 #########################################################
+# z = 0..1 y = -1..1| rotation = -1 .. 2 | rotation + 1 = 0..3
+#######
 ROTATE_IN_Y:
+  ret
+  addi sp, sp, -16
+  sw ra, 0(sp)
+  sw a0, 4(sp)
+  fsw fa0, 8(sp)
+  fsw fs0, 12(sp)
+
+  # Calling sin angle
+  jal SIN
+  fmv.s fs0, fa0
+
+  # Retrieving fa0 t0 call COS
+  flw fa0, 8(sp)
+  jal COS
+
+  # Retrieving a0
+  lw a0, 4(sp)
+
+  # Doing rotation. {a0 = cos, fs0 = sin}
+  flw ft0, VECTOR3_F_X(a0)
+  flw ft1, VECTOR3_F_Z(a0)
+
+  fmul.s ft2, ft0, fa0 # x * cos
+  fmul.s ft3, ft0, fs0 # x * sin
+
+  fmul.s ft4, ft1, fa0 # z * cos
+  fmul.s ft5, ft1, fs0 # z * sin
+
+  fadd.s ft0, ft2, ft5 # x*cos + z*sin
+  fsub.s ft1, ft4, ft3 # z*cos - x*sin
+
+  fsw ft0, VECTOR3_F_X(a0)
+  fsw ft1, VECTOR3_F_Z(a0)
+
+  lw ra, 0(sp)
+  flw fs0, 12(sp)
+  addi sp, sp, 16
   ret
 
 #########################################################
@@ -424,4 +491,22 @@ GET_HORZ_BOUND:
   li a1, 60
   ret
 
+#############################
+# a0 = color
+#############################
+DRAW_BACKGROUND:
+	li t0, SCREEN_BUFFER_ADDRESS
+	li t1, NUMBER_OF_PIXELS
+	add t1, t0, t1
+
+loop_draw_back_ground:
+	bge t0, t1, end_draw_back_ground
+	sw a0, 0(t0)
+	addi t0, t0, 4
+	j loop_draw_back_ground
+
+end_draw_back_ground:
+	ret
+
 .include "../src/barycentric.s"
+.include "../src/math.s"
