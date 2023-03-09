@@ -1,4 +1,3 @@
-
 .include "../src/consts.s"
 .include "../src/macros.s"
 
@@ -6,9 +5,9 @@
 .include "../src/data.s"
 #.include "../data/triangle.data"
 #.include "../data/humanoid.data"
-#.include "../data/triangle2.data"
+.include "../data/triangle2.data"
 #.include "../data/cube.data"
-.include "../data/cup.data"
+#.include "../data/cup.data"
 
 .align 2
 VECTOR3s:
@@ -23,6 +22,7 @@ TRIANGLE:
 
 .text
   jal INIT_VIDEO
+  li s6, 20
 MAIN:
   # Clear background
   li a0, 0xFFFFFFFF
@@ -83,6 +83,7 @@ main_mesh_loop:
   # Rotating V1
   la a0, VECTOR3s
   csrr t0, time
+mv t0, s6
   li t1, 1000
   fcvt.s.w fa0, t0
   fcvt.s.w ft0, t1
@@ -93,6 +94,7 @@ main_mesh_loop:
   la a0, VECTOR3s
   addi a0, a0, VECTOR3_BYTE_SIZE
   csrr t0, time
+mv t0, s6
   li t1, 1000
   fcvt.s.w fa0, t0
   fcvt.s.w ft0, t1
@@ -104,6 +106,7 @@ main_mesh_loop:
   addi a0, a0, VECTOR3_BYTE_SIZE
   addi a0, a0, VECTOR3_BYTE_SIZE
   csrr t0, time
+mv t0, s6
   li t1, 1000
   fcvt.s.w fa0, t0
   fcvt.s.w ft0, t1
@@ -189,6 +192,8 @@ main_mesh_loop:
 
   la a0, TRIANGLE
   jal GET_VERT_BOUND
+  addi a0, a0, 1
+  addi a1, a1, 0
   mv s2, a0
   mv s3, a1
 
@@ -229,6 +234,7 @@ main_mesh_loop_end:
 #   li a7, 10
 #   ecall
   jal SWAP_FRAMES
+  addi s6, s6, 4
   j MAIN
 
 .include "../src/math.s"
