@@ -1,3 +1,27 @@
+### Color Macros #####
+.macro RED(%dest, %src)
+  andi %dest, %src, 0x007
+.end_macro
+
+.macro GREEN(%dest, %src)
+  andi %dest, %src,  0x038
+  srli %dest, %dest, 3
+.end_macro
+
+.macro BLUE(%dest, %src)
+  andi %dest, %src, 0x0C0
+  srli %dest, %dest, 6
+.end_macro
+
+.macro RGB(%dest, %r, %g, %b)
+  li %dest, 0
+  or %dest, %dest, %b
+  slli %dest, %dest, 3
+  or %dest, %dest, %g
+  slli %dest, %dest, 3
+  or %dest, %dest, %r
+.end_macro
+
 ########## Put the buffer to draw on register #########
 .macro GET_BUFFER_TO_DRAW(%reg)
 	addi sp, sp, -4
@@ -27,10 +51,26 @@
   add %reg, %reg, t6
 .end_macro
 
+.macro ZBUFFER_PIXEL(%reg, %x, %y)
+  li %reg, SCREEN_WIDTH  
+  mul %reg, %reg, %y
+  add %reg, %reg, %x
+  li t6, 4
+  mul %reg, %reg, t6
+  la t6, ZBUFFER
+  add %reg, %reg, t6
+.end_macro
+
 .macro SWAP(%temp, %a, %b)
   mv %temp, %a
   mv %a, %b
   mv %b, %temp
+.end_macro
+
+.macro FSWAP(%temp, %a, %b)
+  fmv.s %temp, %a
+  fmv.s %a, %b
+  fmv.s %b, %temp
 .end_macro
 
 .macro MAKE_VECTOR2(%addr, %x, %y)

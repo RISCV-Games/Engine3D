@@ -20,10 +20,26 @@ VECTOR2s:
 TRIANGLE:
   .space TRIANGLE_BYTE_SIZE
 
+.align 2
+ZBUFFER:
+  .space ZBUFFER_SIZE
+
 .text
   jal INIT_VIDEO
-  li s6, 20
+  li s6, 0
 MAIN:
+  li t0, 0
+  li t1, ZBUFFER_SIZE
+  la t3, ZBUFFER
+
+main_clear_zbuffer:
+  bge t0, t1, main_clear_zbuffer_end
+  sw zero, 0(t3)
+  addi t0, t0, 4
+  addi t3, t3, 4
+  j main_clear_zbuffer
+
+main_clear_zbuffer_end:
   # Clear background
   li a0, 0xFFFFFFFF
   jal DRAW_BACKGROUND
@@ -152,6 +168,14 @@ mv t0, s6
   fadd.s fa2, fa2, ft0 # fa2 = 1
   jal TRANSLATE
 
+  # Saving Zss
+  la t0, VECTOR3s
+  flw fs9, VECTOR3_F_Z(t0)
+  addi t0, t0, VECTOR3_BYTE_SIZE
+  flw fs10, VECTOR3_F_Z(t0)
+  addi t0, t0, VECTOR3_BYTE_SIZE
+  flw fs11, VECTOR3_F_Z(t0)
+
   # Projecting to 2D
   la a0, VECTOR3s
   la a1, VECTOR2s
@@ -188,6 +212,9 @@ mv t0, s6
   la a1, VECTOR2s
   addi a2, a1, VECTOR2_BYTE_SIZE
   addi a3, a2, VECTOR2_BYTE_SIZE
+  li a4, RED_COLOR
+  li a5, GREEN_COLOR
+  li a6, BLUE_COLOR
   jal MAKE_TRIANGLE
 
   la a0, TRIANGLE
@@ -209,14 +236,52 @@ main_vert_loop:
   main_horz_loop:
 	bgt s4, s5, main_horz_loop_end
 
-	# la a0, TRIANGLE
-	# mv a1, s4
-	# mv a2, s2
-	# jal TRIANGLE_BARYCENTRIC
+	la a0, TRIANGLE
+	mv a1, s4
+	mv a2, s2
+	jal TRIANGLE_BARYCENTRIC # Returns fa0 = u1, fa1 = u2, fa2 = u3
+  fmv.s fs0, fa0
+  fmv.s fs1, fa1
+  fmv.s fs2, fa2
+
+  # Doing Zbuffer calculation
+  # multiplying u
+  fmul.s ft0, fs9, fa0
+  fmul.s ft1, fs10, fa1
+  fmul.s ft2, fs11, fa2
+
+  # Inverting
+  li t0, 1
+  fcvt.s.w ft3, t0
+  fdiv.s ft0, ft3, ft0
+  fdiv.s ft1, ft3, ft1
+  fdiv.s ft2, ft3, ft2
+
+  # Adding
+  fadd.s ft3, ft0, ft1
+  fadd.s ft3, ft3, ft2 # ft3 = 1/z
+
+  ZBUFFER_PIXEL(t0, s4, s2)
+  flw ft1, 0(t0) # ft1 = zbuffer 1/z
+
+  flt.s t1, ft3, ft1
+  bne t1, zero, main_no_draw
+  fsw ft3 0(t0)
+
+  # Drawing
+  fmv.s fa0, fs0
+  fmv.s fa1, fs1
+  fmv.s fa2, fs2
+  la t0, TRIANGLE
+  lb a0, TRIANGLE_B_COLOR0(t0)
+  lb a1, TRIANGLE_B_COLOR1(t0)
+  lb a2, TRIANGLE_B_COLOR2(t0)
+  jal MIX_COLOR3_B # Returns a0 = color
 	PIXEL(t0, s4, s2)
-	li t1, 0x2828
-	sb t1, 0(t0)
+  #li a0, RED_COLOR
+	sb a0, 0(t0)
 	
+main_no_draw:
 	addi s4, s4, 1
 	j main_horz_loop
 
@@ -229,12 +294,13 @@ main_vert_loop_end:
   j main_mesh_loop
 
 main_mesh_loop_end:
-#   li a7, 5
-#   ecall
-#   li a7, 10
-#   ecall
   jal SWAP_FRAMES
-  addi s6, s6, 4
+  addi s6, s6, 50
+
+  #li a7, 5
+  #ecall
+  #li a7, 10
+  #ecall
   j MAIN
 
 .include "../src/math.s"

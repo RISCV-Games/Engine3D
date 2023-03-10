@@ -56,12 +56,11 @@ PROJECT_SCREEN_WORD:
 # a1 = v1
 # a2 = v2
 # a3 = v3
+# a4 = color1
+# a5 = color2
+# a6 = color3
 #########################################################
 MAKE_TRIANGLE:
-  li t1, 0 
-  li t2, 1
-  li t3, 2
-
   flw ft0, VECTOR2_F_Y(a1)
   flw ft1, VECTOR2_F_Y(a3)
   flt.s t4, ft0, ft1 
@@ -69,7 +68,8 @@ MAKE_TRIANGLE:
 
   # Swap 1-3
   SWAP(t4, a1, a3)
-  SWAP(t4, t1, t3)
+  SWAP(t4, a4, a6)
+  FSWAP(ft4, fs9, fs11)
 
 make_triangle_no_swap_13:
   flw ft0, VECTOR2_F_Y(a2)
@@ -79,7 +79,8 @@ make_triangle_no_swap_13:
 
   # Swap 2 - 3
   SWAP(t4, a2, a3)
-  SWAP(t4, t2, t3)
+  SWAP(t4, a5, a6)
+  FSWAP(ft4, fs10, fs11)
 
 make_triangle_no_swap_23:
   flw ft0, VECTOR2_F_Y(a1)
@@ -89,14 +90,16 @@ make_triangle_no_swap_23:
 
   # Swap 1 2
   SWAP(t4, a1, a2)
-  SWAP(t4, t1, t2)
+  SWAP(t4, a4, a5)
+  FSWAP(ft4, fs9, fs10)
+
 make_triangle_no_swap_12:
   sw a1, TRIANGLE_W_V1(a0)
   sw a2, TRIANGLE_W_V2(a0)
   sw a3, TRIANGLE_W_V3(a0)
-  sb t1, TRIANGLE_B_ORDER0(a0)
-  sb t2, TRIANGLE_B_ORDER1(a0)
-  sb t3, TRIANGLE_B_ORDER2(a0)
+  sb a4, TRIANGLE_B_COLOR0(a0)
+  sb a5, TRIANGLE_B_COLOR1(a0)
+  sb a6, TRIANGLE_B_COLOR2(a0)
   ret
 
 #########################################################
@@ -108,23 +111,9 @@ TRIANGLE_BARYCENTRIC:
   mv a6, a1
   mv a7, a2
 
-  li t3, 4
-
-  lb t4, TRIANGLE_B_ORDER0(a0)
-  mul t4, t4, t3
-  add t4, t4, a0
-
-  lb t5, TRIANGLE_B_ORDER1(a0)
-  mul t5, t5, t3
-  add t5, t5, a0
-
-  lb t6, TRIANGLE_B_ORDER2(a0)
-  mul t6, t6, t3
-  add t6, t6, a0
-
-  lw t0, 0(t4)
-  lw t1, 0(t5)
-  lw t2, 0(t6)
+  lw t0, TRIANGLE_W_V1(a0)
+  lw t1, TRIANGLE_W_V2(a0)
+  lw t2, TRIANGLE_W_V3(a0)
 
   flw fa0, VECTOR2_F_X(t0)
   flw fa1, VECTOR2_F_Y(t0)
@@ -359,9 +348,9 @@ get_horz_bound_end:
 # a6 = xp
 # a7 = yp
 #########################################################
-# a0 = u1
-# a1 = u2
-# a2 = u3
+# fa0 = u1
+# fa1 = u2
+# fa2 = u3
 #########################################################
 BARYCENTRIC:
   sub     t1, a0, a4
@@ -394,11 +383,110 @@ BARYCENTRIC:
 
 
 #########################################################
+# a0 = triangle
+# fa0 = u1
+# fa1 = u2
+# fa3 = u3
+#########################################################
+# fa0 = 1/zp
+#########################################################
+Z_INVERSE_B:
+  lw t0, TRIANGLE_W_V1(a0)
+  lw t1, TRIANGLE_W_V2(a0)
+  lw t2, TRIANGLE_W_V3(a0)
+
+#########################################################
+# fa0 = u1
+# fa1 = u2
+# fa2 = u3
+# a0 = color1
+# a1 = color2
+# a2 = color3
+#########################################################
+# a0 = color
+#########################################################
+MIX_COLOR3_B:
+  # RED
+  RED(t0, a0)
+  RED(t1, a1)
+  RED(t2, a2)
+
+  fcvt.s.w ft0, t0
+  fcvt.s.w ft1, t1
+  fcvt.s.w ft2, t2
+
+  fmul.s ft0, ft0, fa0
+  fmul.s ft1, ft1, fa1
+  fmul.s ft2, ft2, fa2
+  
+  fadd.s ft3, ft0, ft1
+  fadd.s ft3, ft3, ft2
+
+  li t0, 7
+  fcvt.s.w ft0, t0
+  fmin.s ft3, ft3, ft0
+
+  # Green
+  GREEN(t0, a0)
+  GREEN(t1, a1)
+  GREEN(t2, a2)
+
+  fcvt.s.w ft0, t0
+  fcvt.s.w ft1, t1
+  fcvt.s.w ft2, t2
+
+  fmul.s ft0, ft0, fa0
+  fmul.s ft1, ft1, fa1
+  fmul.s ft2, ft2, fa2
+  
+  fadd.s ft4, ft0, ft1
+  fadd.s ft4, ft4, ft2
+
+  li t0, 7
+  fcvt.s.w ft0, t0
+  fmin.s ft4, ft4, ft0
+
+  # Blue
+  BLUE(t0, a0)
+  BLUE(t1, a1)
+  BLUE(t2, a2)
+
+  fcvt.s.w ft0, t0
+  fcvt.s.w ft1, t1
+  fcvt.s.w ft2, t2
+
+  fmul.s ft0, ft0, fa0
+  fmul.s ft1, ft1, fa1
+  fmul.s ft2, ft2, fa2
+  
+  fadd.s ft5, ft0, ft1
+  fadd.s ft5, ft5, ft2
+
+  li t0, 3
+  fcvt.s.w ft0, t0
+  fmin.s ft5, ft5, ft0
+
+  fcvt.w.s t3, ft3
+  fcvt.w.s t4, ft4
+  fcvt.w.s t5, ft5
+
+  RGB(a0, t3, t4, t5)
+
+  li t0, TRANSP_COLOR
+  bne a0, t0, mix_color3_is_not_transp
+
+  addi a0, a0, -1
+mix_color3_is_not_transp:
+  ret
+
+mix_colors3_b_red_not_bigger:
+
+#########################################################
 # a0 = col0
 # a1 = col1
 # a2 = col2
 #########################################################
-MIX_COLORS:
+MIX_COLOR3_M:
 	andi t0, a0, 7
 	andi t1, a1, 7
 	andi t2, a2, 7
