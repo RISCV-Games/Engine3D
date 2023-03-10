@@ -7,12 +7,12 @@ PROJECT_3D_2D:
   flw ft1, VECTOR3_F_Y(a0)
   flw ft2, VECTOR3_F_Z(a0)
 
-  fneg.s ft4, ft3
+  fneg.s ft4, ft2
   fmax.s ft2, ft2, ft4
 
   li t0, EPSILON
   fmv.s.x ft4, t0
-  fadd.s ft2, ft2, ft4
+  fmax.s ft2, ft2, ft4
 
   fdiv.s ft0, ft0, ft2
   fdiv.s ft1, ft1, ft2
@@ -34,8 +34,8 @@ PROJECT_SCREEN_WORD:
   fadd.s ft0, ft0, ft2
   fadd.s ft1, ft1, ft2
 
-  li t0, SCREEN_WIDTH
-  li t1, SCREEN_HEIGHT
+  li t0, DISPLAY_WIDTH
+  li t1, DISPLAY_HEIGHT
   fcvt.s.w ft2, t0
   fcvt.s.w ft3, t1
 
@@ -69,7 +69,6 @@ MAKE_TRIANGLE:
   # Swap 1-3
   SWAP(t4, a1, a3)
   SWAP(t4, a4, a6)
-  FSWAP(ft4, fs9, fs11)
 
 make_triangle_no_swap_13:
   flw ft0, VECTOR2_F_Y(a2)
@@ -80,7 +79,6 @@ make_triangle_no_swap_13:
   # Swap 2 - 3
   SWAP(t4, a2, a3)
   SWAP(t4, a5, a6)
-  FSWAP(ft4, fs10, fs11)
 
 make_triangle_no_swap_23:
   flw ft0, VECTOR2_F_Y(a1)
@@ -91,7 +89,6 @@ make_triangle_no_swap_23:
   # Swap 1 2
   SWAP(t4, a1, a2)
   SWAP(t4, a4, a5)
-  FSWAP(ft4, fs9, fs10)
 
 make_triangle_no_swap_12:
   sw a1, TRIANGLE_W_V1(a0)
@@ -221,11 +218,11 @@ GET_VERT_BOUND:
   bge a0, zero, get_vert_bound_no_negative_l
   mv a0, zero
 get_vert_bound_no_negative_l:
-  li t0, SCREEN_HEIGHT
+  li t0, DISPLAY_HEIGHT
   bge a0, t0, get_vert_bound_error
 
   blt a1, t0, get_vert_bound_no_bigger_h
-  li a1, SCREEN_HEIGHT
+  li a1, DISPLAY_HEIGHT
   addi a1, a1, -1
 get_vert_bound_no_bigger_h:
   blt a1, zero, get_vert_bound_error
@@ -318,7 +315,7 @@ get_horz_bound_end:
 	fmax.s fa1, fa2, fa3
 
 	# ft0 = SCREEN_WIDTH
-	li t0, SCREEN_WIDTH
+	li t0, DISPLAY_WIDTH
 	addi t0, t0, -1
 	fcvt.s.w ft0, t0
 
@@ -348,52 +345,69 @@ get_horz_bound_end:
 # a6 = xp
 # a7 = yp
 #########################################################
+# a0 = is_point_inside_triangle?
 # fa0 = u1
 # fa1 = u2
 # fa2 = u3
 #########################################################
 BARYCENTRIC:
-  sub     t1, a0, a4
-  sub     a3, a3, a5
-  mul     t0, a3, t1
-  sub     a0, a2, a4
-  sub     a1, a5, a1
-  mul     a0, a1, a0
-  add     a0, a0, t0
-  fcvt.s.w        ft0, a0
-  sub     a0, a6, a4
-  mul     a3, a0, a3
-  sub     a2, a4, a2
-  sub     a4, a7, a5
-  mul     a2, a4, a2
-  add     a2, a2, a3
-  fcvt.s.w        ft1, a2
-  fdiv.s  fa0, ft1, ft0
-  mul     a0, a0, a1
-  mul     a1, a4, t1
-  add     a0, a0, a1
-  fcvt.s.w        ft2, a0
-  fdiv.s  fa1, ft2, ft0
-  
-  li t0, 1
-  fcvt.s.w fa2, t0
+  # Calculing expressions parts
+  sub t0, a0, a4 # (x1 - x3)
+  sub t1, a3, a5 # (y2 - y3)
+  sub t2, a2, a4 # (x2 - x3)
+  sub t3, a1, a5 # (y1 - y3)
+  sub t4, a6, a4 # (xp - x3)
+  sub t5, a7, a5 # (yp - y3)
+
+  # Calculing det
+  mul a0, t0, t1 # (x1-x3) (y2-y3)
+  mul a1, t2, t3 # (x2-x3) (y1-y3)
+  sub t6, a0, a1 # (x1-x3) (y2-y3) - (x2-x3) (y1-y3)
+  fcvt.s.w ft0, t6 # ft0 = det
+
+  li a0, -1
+  # Calculing top u1
+  mul a1, t1, t4 # (y2 - y3) (xp - x3)
+  mul a2, t2, a0 # (x3 - x2)
+  mul a2, a2, t5 # (x3 - x2) (yp - y3)
+  add a2, a2, a1 # (x3 - x2) (yp - y3) + (y2 - y3) (xp - x3)
+  fcvt.s.w fa0, a2 # fa0 = u1 * det
+
+  # Calculing top u2
+  mul a1, t3, a0 # (y3 - y1)
+  mul a1, a1, t4 # (y3 - y1) * (xp - x3)
+  mul a2, t0, t5 # (x1 - x3) * (yp - y3)
+  add a2, a2, a1 # (x1 - x3) * (yp - y3) + (y3 - y1) * (xp - x3)
+  fcvt.s.w fa1, a2 # fa1 = u2 * det
+
+  # Dividing by det
+  fdiv.s fa0, fa0, ft0
+  fdiv.s fa1, fa1, ft0
+
+  # Calculing u3
+  li a0, 1
+  fcvt.s.w fa2, a0
   fsub.s fa2, fa2, fa0
-  fsub.s fa2, fa2, fa1
+  fsub.s fa2, fa2, fa1 # u3 = 1 - u1 - u2
+
+  # Check if point exists
+  fmv.s.x ft1, zero
+  flt.s t0, fa0, ft1 # t0 = fa0 < zero
+  flt.s t1, fa1, ft1 # t1 = fa1 < zero
+  flt.s t2, fa2, ft1 # t2 = fa2 < zero
+
+  or t0, t0, t1
+  or t0, t0, t2
+  bgt t0, zero, barycentric_not_exist
+
+  # Exists!
+  li a0, 1
   ret
 
+barycentric_not_exist:
+  li a0, 0
+  ret
 
-#########################################################
-# a0 = triangle
-# fa0 = u1
-# fa1 = u2
-# fa3 = u3
-#########################################################
-# fa0 = 1/zp
-#########################################################
-Z_INVERSE_B:
-  lw t0, TRIANGLE_W_V1(a0)
-  lw t1, TRIANGLE_W_V2(a0)
-  lw t2, TRIANGLE_W_V3(a0)
 
 #########################################################
 # fa0 = u1
@@ -475,7 +489,7 @@ MIX_COLOR3_B:
   li t0, TRANSP_COLOR
   bne a0, t0, mix_color3_is_not_transp
 
-  addi a0, a0, -1
+  li a0, 7
 mix_color3_is_not_transp:
   ret
 

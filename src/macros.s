@@ -44,21 +44,32 @@
 .end_macro
 
 .macro PIXEL(%reg, %x, %y)
+  addi sp, sp, -4
+  sw t6, 0(sp)
+
   li %reg, SCREEN_WIDTH  
   mul %reg, %reg, %y
   add %reg, %reg, %x
   GET_BUFFER_TO_DRAW(t6)
   add %reg, %reg, t6
+
+  lw t6, 0(sp)
+  addi sp, sp, 4
 .end_macro
 
 .macro ZBUFFER_PIXEL(%reg, %x, %y)
-  li %reg, SCREEN_WIDTH  
+  addi sp, sp, -4
+  sw t6, 0(sp)
+
+  li %reg, DISPLAY_WIDTH  
   mul %reg, %reg, %y
   add %reg, %reg, %x
-  li t6, 4
-  mul %reg, %reg, t6
+  slli %reg, %reg, 2
   la t6, ZBUFFER
   add %reg, %reg, t6
+
+  lw t6, 0(sp)
+  addi sp, sp, 4
 .end_macro
 
 .macro SWAP(%temp, %a, %b)

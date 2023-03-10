@@ -5,8 +5,8 @@
 .include "../src/data.s"
 #.include "../data/triangle.data"
 #.include "../data/humanoid.data"
-.include "../data/triangle2.data"
-#.include "../data/cube.data"
+#.include "../data/triangle2.data"
+.include "../data/cube.data"
 #.include "../data/cup.data"
 
 .align 2
@@ -26,22 +26,24 @@ ZBUFFER:
 
 .text
   jal INIT_VIDEO
-  li s6, 0
+  li s6, 180000
 MAIN:
   li t0, 0
+  li t2, MAX_FLOAT
+  fmv.s.x ft0, t2
   li t1, ZBUFFER_SIZE
   la t3, ZBUFFER
 
 main_clear_zbuffer:
   bge t0, t1, main_clear_zbuffer_end
-  sw zero, 0(t3)
+  fsw ft0, 0(t3)
   addi t0, t0, 4
   addi t3, t3, 4
   j main_clear_zbuffer
 
 main_clear_zbuffer_end:
   # Clear background
-  li a0, 0xFFFFFFFF
+  li a0, 0x0000
   jal DRAW_BACKGROUND
 
   # Loop mesh
@@ -134,7 +136,7 @@ mv t0, s6
   li t0, 0
   fcvt.s.w fa0, t0# fa0 = 0
   fcvt.s.w fa1, t0# fa1 = 0
-  li t0, HALF_S
+  li t0, HALF_S 
   fmv.s.x fa2, t0
   li t0, 1
   fcvt.s.w ft0, t0
@@ -219,10 +221,29 @@ mv t0, s6
 
   la a0, TRIANGLE
   jal GET_VERT_BOUND
-  addi a0, a0, 1
+  addi a0, a0, 0
   addi a1, a1, 0
   mv s2, a0
   mv s3, a1
+
+    # Ordering z
+  fmv.s ft0, fs9
+  fmv.s ft1, fs10
+  fmv.s ft2, fs11
+
+  #min
+  fmin.s fs9, ft0, ft1
+  fmin.s fs9, fs9, ft2
+
+  #max
+  fmax.s f11, ft0, ft1
+  fmax.s f11, f11, ft2
+    
+  #mid
+  fadd.s fs10, ft0, ft1
+  fadd.s fs10, fs10, ft2
+  fsub.s fs10, fs10, fs9
+  fsub.s fs10, fs10, fs11
 
 main_vert_loop:
   bgt s2, s3, main_vert_loop_end
@@ -239,34 +260,55 @@ main_vert_loop:
 	la a0, TRIANGLE
 	mv a1, s4
 	mv a2, s2
-	jal TRIANGLE_BARYCENTRIC # Returns fa0 = u1, fa1 = u2, fa2 = u3
+	jal TRIANGLE_BARYCENTRIC # Returns a0 = is_point_inside_triangle ,fa0 = u1, fa1 = u2, fa2 = u3
+  beq a0, zero, main_no_draw
   fmv.s fs0, fa0
   fmv.s fs1, fa1
   fmv.s fs2, fa2
 
   # Doing Zbuffer calculation
-  # multiplying u
-  fmul.s ft0, fs9, fa0
-  fmul.s ft1, fs10, fa1
-  fmul.s ft2, fs11, fa2
 
   # Inverting
   li t0, 1
   fcvt.s.w ft3, t0
-  fdiv.s ft0, ft3, ft0
-  fdiv.s ft1, ft3, ft1
-  fdiv.s ft2, ft3, ft2
+
+  # Defining near
+  #li t1, NEAR
+  #fmv.s.x ft6, t1
+  #fdiv.s ft6, ft3, ft6
+
+  ## Defining far
+  #li t1, FAR
+  #fmv.s.x ft7, t1
+  #fdiv.s ft7, ft3, ft7
+
+  # getting 1/z
+  fdiv.s ft0, ft3, fs9
+  fdiv.s ft1, ft3, fs10
+  fdiv.s ft2, ft3, fs11
+
+  # multiplying u
+  fmul.s ft0, ft0, fs0
+  fmul.s ft1, ft1, fs1
+  fmul.s ft2, ft2, fs2
 
   # Adding
-  fadd.s ft3, ft0, ft1
-  fadd.s ft3, ft3, ft2 # ft3 = 1/z
+  fadd.s ft4, ft0, ft1
+  fadd.s ft4, ft4, ft2 # ft4 = 1/z
+
+  # Inverting back
+  fdiv.s ft5, ft3, ft4 # ft5 = z
 
   ZBUFFER_PIXEL(t0, s4, s2)
-  flw ft1, 0(t0) # ft1 = zbuffer 1/z
+  flw ft1, 0(t0) # ft1 = zbuffer z
 
-  flt.s t1, ft3, ft1
-  bne t1, zero, main_no_draw
-  fsw ft3 0(t0)
+  fle.s t1, ft1, ft5 # z < zbuffer
+  #flt.s t2, ft6, ft3 # 1/z < 1/near
+  #flt.s t3, ft3, ft7 # 1/z > 1/far
+  #or t1, t1, t2
+  #or t1, t1, t3
+  bgt t1, zero, main_no_draw
+  fsw ft5 0(t0)
 
   # Drawing
   fmv.s fa0, fs0
@@ -277,9 +319,9 @@ main_vert_loop:
   lb a1, TRIANGLE_B_COLOR1(t0)
   lb a2, TRIANGLE_B_COLOR2(t0)
   jal MIX_COLOR3_B # Returns a0 = color
-	PIXEL(t0, s4, s2)
-  #li a0, RED_COLOR
-	sb a0, 0(t0)
+  mv a1, s4
+  mv a2, s2
+  jal DRAW_SCALLED_PIXEL
 	
 main_no_draw:
 	addi s4, s4, 1
@@ -294,13 +336,14 @@ main_vert_loop_end:
   j main_mesh_loop
 
 main_mesh_loop_end:
-  jal SWAP_FRAMES
-  addi s6, s6, 50
-
   #li a7, 5
   #ecall
   #li a7, 10
   #ecall
+
+  jal SWAP_FRAMES
+  addi s6, s6, 3
+
   j MAIN
 
 .include "../src/math.s"

@@ -1,3 +1,5 @@
+.include "../src/consts.s"
+.include "../src/macros.s"
 .text
   li a0, 0
   li a1, 0
@@ -20,7 +22,20 @@
   li a7, 2
   ecall
 
+  li a0, '\n'
+  li a7, 11
+  ecall
+
+  fmv.s fa0, fa2
+  li a7, 2
+  ecall
+
+  li a0, '\n'
+  li a7, 11
+  ecall
+
   li a7, 10
   ecall
 
-.include "../src/barycentric.s"
+.include "../src/graphics.s"
+.include "../src/math.s"
