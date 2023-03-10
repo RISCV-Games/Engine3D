@@ -69,6 +69,7 @@ MAKE_TRIANGLE:
   # Swap 1-3
   SWAP(t4, a1, a3)
   SWAP(t4, a4, a6)
+  FSWAP(ft4, fs9, fs11)
 
 make_triangle_no_swap_13:
   flw ft0, VECTOR2_F_Y(a2)
@@ -79,6 +80,7 @@ make_triangle_no_swap_13:
   # Swap 2 - 3
   SWAP(t4, a2, a3)
   SWAP(t4, a5, a6)
+  FSWAP(ft4, fs10, fs11)
 
 make_triangle_no_swap_23:
   flw ft0, VECTOR2_F_Y(a1)
@@ -89,6 +91,7 @@ make_triangle_no_swap_23:
   # Swap 1 2
   SWAP(t4, a1, a2)
   SWAP(t4, a4, a5)
+  FSWAP(ft4, fs9, fs10)
 
 make_triangle_no_swap_12:
   sw a1, TRIANGLE_W_V1(a0)

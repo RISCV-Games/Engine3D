@@ -5,8 +5,8 @@
 .include "../src/data.s"
 #.include "../data/triangle.data"
 #.include "../data/humanoid.data"
-#.include "../data/triangle2.data"
-.include "../data/cube.data"
+.include "../data/triangle2.data"
+#.include "../data/cube.data"
 #.include "../data/cup.data"
 
 .align 2
@@ -221,29 +221,10 @@ mv t0, s6
 
   la a0, TRIANGLE
   jal GET_VERT_BOUND
-  addi a0, a0, 0
+  addi a0, a0, 1
   addi a1, a1, 0
   mv s2, a0
   mv s3, a1
-
-    # Ordering z
-  fmv.s ft0, fs9
-  fmv.s ft1, fs10
-  fmv.s ft2, fs11
-
-  #min
-  fmin.s fs9, ft0, ft1
-  fmin.s fs9, fs9, ft2
-
-  #max
-  fmax.s f11, ft0, ft1
-  fmax.s f11, f11, ft2
-    
-  #mid
-  fadd.s fs10, ft0, ft1
-  fadd.s fs10, fs10, ft2
-  fsub.s fs10, fs10, fs9
-  fsub.s fs10, fs10, fs11
 
 main_vert_loop:
   bgt s2, s3, main_vert_loop_end
@@ -267,25 +248,25 @@ main_vert_loop:
   fmv.s fs2, fa2
 
   # Doing Zbuffer calculation
+  # Defining near
+  li t1, NEAR
+  fmv.s.x ft6, t1
+
+  ## Defining far
+  li t1, FAR
+  fmv.s.x ft7, t1
 
   # Inverting
   li t0, 1
   fcvt.s.w ft3, t0
-
-  # Defining near
-  #li t1, NEAR
-  #fmv.s.x ft6, t1
-  #fdiv.s ft6, ft3, ft6
-
-  ## Defining far
-  #li t1, FAR
-  #fmv.s.x ft7, t1
-  #fdiv.s ft7, ft3, ft7
-
   # getting 1/z
   fdiv.s ft0, ft3, fs9
   fdiv.s ft1, ft3, fs10
   fdiv.s ft2, ft3, fs11
+
+  #fmv.s ft0, fs9
+  #fmv.s ft1, fs10
+  #fmv.s ft2, fs11
 
   # multiplying u
   fmul.s ft0, ft0, fs0
@@ -298,15 +279,16 @@ main_vert_loop:
 
   # Inverting back
   fdiv.s ft5, ft3, ft4 # ft5 = z
+  #fmv.s ft5, ft4 # ft5 = z
 
   ZBUFFER_PIXEL(t0, s4, s2)
   flw ft1, 0(t0) # ft1 = zbuffer z
 
   fle.s t1, ft1, ft5 # z < zbuffer
-  #flt.s t2, ft6, ft3 # 1/z < 1/near
-  #flt.s t3, ft3, ft7 # 1/z > 1/far
-  #or t1, t1, t2
-  #or t1, t1, t3
+  flt.s t2, ft5, ft6 # z > near
+  flt.s t3, ft7, ft5 # z < far
+  or t1, t1, t2
+  or t1, t1, t3
   bgt t1, zero, main_no_draw
   fsw ft5 0(t0)
 
