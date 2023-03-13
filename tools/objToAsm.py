@@ -91,9 +91,11 @@ class Mesh:
         max_z = max(v.z for v in mesh.vertices)
         min_z = min(v.z for v in mesh.vertices)
 
-        normalize_x = lambda num: normalize_range(num, min_x, max_x, -1, 1, 0.5)
-        normalize_y = lambda num: normalize_range(num, min_y, max_y, -1, 1, 0.5)
-        normalize_z = lambda num: normalize_range(num, min_z, max_z, -1, 1, 0.5)
+        scale = 0.8
+
+        normalize_x = lambda num: normalize_range(num, min_x, max_x, -1, 1, scale)
+        normalize_y = lambda num: -1* normalize_range(num, min_y, max_y, -1, 1, scale)
+        normalize_z = lambda num: normalize_range(num, min_z, max_z, -1, 1, scale)
 
         return Mesh(
                 vertices=[

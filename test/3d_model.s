@@ -8,7 +8,7 @@
 #.include "../data/triangle2.data"
 #.include "../data/cube.data"
 #.include "../data/cup.data"
-.include "../data/katana.data"
+.include "../data/tree.data"
 
 .align 2
 VECTOR3s:
