@@ -7,8 +7,7 @@ PROJECT_3D_2D:
   flw ft1, VECTOR3_F_Y(a0)
   flw ft2, VECTOR3_F_Z(a0)
 
-  fneg.s ft4, ft2
-  fmax.s ft2, ft2, ft4
+  fabs.s ft2, ft2
 
   li t0, EPSILON
   fmv.s.x ft4, t0
@@ -160,7 +159,7 @@ TRANSLATE:
 # a0 = vector3
 # fa0 = angle
 #########################################################
-# z = 0..1 y = -1..1| rotation = -1 .. 2 | rotation + 1 = 0..3
+# z = -1..1 y = -1..1| rotation = -1 .. 2 | rotation + 1 = 0..3
 #######
 ROTATE_IN_Y:
   addi sp, sp, -16
@@ -190,7 +189,6 @@ ROTATE_IN_Y:
   fmul.s ft4, ft1, fa0 # z * cos
   fmul.s ft5, ft1, fs0 # z * sin
 
-  fmv.s ft0, ft2
   fadd.s ft0, ft2, ft5 # x*cos + z*sin
   fsub.s ft1, ft4, ft3 # z*cos - x*sin
 
@@ -241,7 +239,7 @@ get_vert_bound_error:
 # a1 = y
 #####################
 GET_HORZ_BOUND:
-
+  # Normal Implementation
 	lw t0, TRIANGLE_W_V1(a0)
 	lw t1, TRIANGLE_W_V2(a0)
 	lw t2, TRIANGLE_W_V3(a0)
@@ -394,13 +392,15 @@ BARYCENTRIC:
   fsub.s fa2, fa2, fa1 # u3 = 1 - u1 - u2
 
   # Check if point exists
-  fmv.s.x ft1, zero
+  fcvt.s.w ft1, zero
   flt.s t0, fa0, ft1 # t0 = fa0 < zero
   flt.s t1, fa1, ft1 # t1 = fa1 < zero
   flt.s t2, fa2, ft1 # t2 = fa2 < zero
+  feq.s t3, ft0, ft1 # t3 = det == zero
 
   or t0, t0, t1
   or t0, t0, t2
+  or t0, t0, t3
   bgt t0, zero, barycentric_not_exist
 
   # Exists!
@@ -495,8 +495,6 @@ MIX_COLOR3_B:
   li a0, 7
 mix_color3_is_not_transp:
   ret
-
-mix_colors3_b_red_not_bigger:
 
 #########################################################
 # a0 = col0

@@ -25,15 +25,15 @@
 ########## Put the buffer to draw on register #########
 .macro GET_BUFFER_TO_DRAW(%reg)
 	addi sp, sp, -4
-	sw s11, 0(sp)
+	sw s7, 0(sp)
 
 	la %reg, FRAME_TO_DRAW
 	lb %reg, 0(%reg)
 	slli %reg, %reg, 20
-	li s11, BUFFER_ADRESS
-	add %reg, s11, %reg
+	li s7, BUFFER_ADRESS
+	add %reg, s7, %reg
 
-	lw s11, 0(sp)
+	lw s7, 0(sp)
 	addi sp, sp, 4
 .end_macro
 
@@ -43,32 +43,18 @@
   fsw %z, VECTOR3_F_Z(%addr)
 .end_macro
 
-.macro PIXEL(%reg, %x, %y)
-  addi sp, sp, -4
-  sw t6, 0(sp)
-
-  li %reg, SCREEN_WIDTH  
-  mul %reg, %reg, %y
-  add %reg, %reg, %x
-  GET_BUFFER_TO_DRAW(t6)
-  add %reg, %reg, t6
-
-  lw t6, 0(sp)
-  addi sp, sp, 4
-.end_macro
-
 .macro ZBUFFER_PIXEL(%reg, %x, %y)
   addi sp, sp, -4
-  sw t6, 0(sp)
+  sw s7, 0(sp)
 
   li %reg, DISPLAY_WIDTH  
   mul %reg, %reg, %y
   add %reg, %reg, %x
   slli %reg, %reg, 2
-  la t6, ZBUFFER
-  add %reg, %reg, t6
+  la s7, ZBUFFER
+  add %reg, %reg, s7
 
-  lw t6, 0(sp)
+  lw s7, 0(sp)
   addi sp, sp, 4
 .end_macro
 

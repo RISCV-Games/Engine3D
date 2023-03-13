@@ -5,9 +5,9 @@
 .include "../src/data.s"
 #.include "../data/triangle.data"
 #.include "../data/humanoid.data"
-.include "../data/triangle2.data"
+#.include "../data/triangle2.data"
 #.include "../data/cube.data"
-#.include "../data/cup.data"
+.include "../data/cup.data"
 
 .align 2
 VECTOR3s:
@@ -26,7 +26,7 @@ ZBUFFER:
 
 .text
   jal INIT_VIDEO
-  li s6, 180000
+  li s6, 0
 MAIN:
   li t0, 0
   li t2, MAX_FLOAT
@@ -48,15 +48,15 @@ main_clear_zbuffer_end:
 
   # Loop mesh
   la t0, MESH_SIZE
-  lw s0, 0(t0)
-  li s1, 0
+  lw s1, 0(t0)
+  li s0, 0
 
 main_mesh_loop:
-  bge s1, s0, main_mesh_loop_end
+  bge s0, s1, main_mesh_loop_end
 
   # Load FACE
   li t0, 12
-  mul t0, t0, s1
+  mul t0, t0, s0
   la t1, MESH_FACE
   add t0, t0, t1
 
@@ -100,10 +100,8 @@ main_mesh_loop:
 
   # Rotating V1
   la a0, VECTOR3s
-  csrr t0, time
-mv t0, s6
   li t1, 1000
-  fcvt.s.w fa0, t0
+  fcvt.s.w fa0, s6
   fcvt.s.w ft0, t1
   fdiv.s fa0, fa0, ft0
   jal ROTATE_IN_Y
@@ -111,10 +109,8 @@ mv t0, s6
   # Rotating V2
   la a0, VECTOR3s
   addi a0, a0, VECTOR3_BYTE_SIZE
-  csrr t0, time
-mv t0, s6
   li t1, 1000
-  fcvt.s.w fa0, t0
+  fcvt.s.w fa0, s6
   fcvt.s.w ft0, t1
   fdiv.s fa0, fa0, ft0
   jal ROTATE_IN_Y
@@ -123,19 +119,16 @@ mv t0, s6
   la a0, VECTOR3s
   addi a0, a0, VECTOR3_BYTE_SIZE
   addi a0, a0, VECTOR3_BYTE_SIZE
-  csrr t0, time
-mv t0, s6
   li t1, 1000
-  fcvt.s.w fa0, t0
+  fcvt.s.w fa0, s6
   fcvt.s.w ft0, t1
   fdiv.s fa0, fa0, ft0
   jal ROTATE_IN_Y
 
   # Translating V1
   la a0, VECTOR3s
-  li t0, 0
-  fcvt.s.w fa0, t0# fa0 = 0
-  fcvt.s.w fa1, t0# fa1 = 0
+  fcvt.s.w fa0, zero# fa0 = 0
+  fcvt.s.w fa1, zero# fa1 = 0
   li t0, HALF_S 
   fmv.s.x fa2, t0
   li t0, 1
@@ -146,9 +139,8 @@ mv t0, s6
   # Translating V2
   la a0, VECTOR3s
   addi a0, a0, VECTOR3_BYTE_SIZE
-  li t0, 0
-  fcvt.s.w fa0, t0# fa0 = 0
-  fcvt.s.w fa1, t0# fa1 = 0
+  fcvt.s.w fa0, zero# fa0 = 0
+  fcvt.s.w fa1, zero# fa1 = 0
   li t0, HALF_S
   fmv.s.x fa2, t0
   li t0, 1
@@ -160,9 +152,8 @@ mv t0, s6
   la a0, VECTOR3s
   addi a0, a0, VECTOR3_BYTE_SIZE
   addi a0, a0, VECTOR3_BYTE_SIZE
-  li t0, 0
-  fcvt.s.w fa0, t0# fa0 = 0
-  fcvt.s.w fa1, t0# fa1 = 0
+  fcvt.s.w fa0, zero# fa0 = 0
+  fcvt.s.w fa1, zero# fa1 = 0
   li t0, HALF_S
   fmv.s.x fa2, t0
   li t0, 1
@@ -210,6 +201,7 @@ mv t0, s6
   addi a0, a0, VECTOR2_BYTE_SIZE
   jal PROJECT_SCREEN_WORD
 
+  # Making triangle
   la a0, TRIANGLE
   la a1, VECTOR2s
   addi a2, a1, VECTOR2_BYTE_SIZE
@@ -221,8 +213,6 @@ mv t0, s6
 
   la a0, TRIANGLE
   jal GET_VERT_BOUND
-  addi a0, a0, 1
-  addi a1, a1, 0
   mv s2, a0
   mv s3, a1
 
@@ -259,14 +249,11 @@ main_vert_loop:
   # Inverting
   li t0, 1
   fcvt.s.w ft3, t0
+
   # getting 1/z
   fdiv.s ft0, ft3, fs9
   fdiv.s ft1, ft3, fs10
   fdiv.s ft2, ft3, fs11
-
-  #fmv.s ft0, fs9
-  #fmv.s ft1, fs10
-  #fmv.s ft2, fs11
 
   # multiplying u
   fmul.s ft0, ft0, fs0
@@ -279,7 +266,6 @@ main_vert_loop:
 
   # Inverting back
   fdiv.s ft5, ft3, ft4 # ft5 = z
-  #fmv.s ft5, ft4 # ft5 = z
 
   ZBUFFER_PIXEL(t0, s4, s2)
   flw ft1, 0(t0) # ft1 = zbuffer z
@@ -314,7 +300,7 @@ main_horz_loop_end:
   j main_vert_loop
 
 main_vert_loop_end:
-  addi s1, s1, 1
+  addi s0, s0, 1
   j main_mesh_loop
 
 main_mesh_loop_end:
@@ -324,7 +310,7 @@ main_mesh_loop_end:
   #ecall
 
   jal SWAP_FRAMES
-  addi s6, s6, 3
+  addi s6, s6, 10
 
   j MAIN
 
