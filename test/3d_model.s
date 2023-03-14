@@ -44,7 +44,8 @@ main_clear_zbuffer:
 
 main_clear_zbuffer_end:
   # Clear background
-  li a0, 0x0000
+  #li a0, 0xf4f4f4f4
+  li a0, 0
   jal DRAW_BACKGROUND
 
   # Loop mesh
@@ -278,6 +279,7 @@ main_vert_loop:
   or t1, t1, t3
   bgt t1, zero, main_no_draw
   fsw ft5 0(t0)
+  fmv.s fs3, ft5
 
   # Drawing
   fmv.s fa0, fs0
@@ -288,6 +290,8 @@ main_vert_loop:
   lb a1, TRIANGLE_B_COLOR1(t0)
   lb a2, TRIANGLE_B_COLOR2(t0)
   jal MIX_COLOR3_B # Returns a0 = color
+  fmv.s fa0, fs3
+  jal SHADE_COLOR_Z
   mv a1, s4
   mv a2, s2
   jal DRAW_SCALLED_PIXEL

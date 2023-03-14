@@ -539,3 +539,31 @@ MIX_COLOR3_M:
 
 	ret
 
+#################################
+# a0 = color
+# fa0 = z
+#################################
+SHADE_COLOR_Z:
+	li t0, 1
+	fcvt.s.w ft0, t0
+	fmax.s fa0, fa0, ft0
+
+	RED(t0, a0)
+	GREEN(t1, a0)
+	BLUE(t2, a0)
+
+	fcvt.s.w ft0, t0
+	fcvt.s.w ft1, t1
+	fcvt.s.w ft2, t2
+
+	fdiv.s ft0, ft0, fa0 
+	fdiv.s ft1, ft1, fa0 
+	fdiv.s ft2, ft2, fa0 
+
+	fcvt.w.s t0, ft0
+	fcvt.w.s t1, ft1
+	fcvt.w.s t2, ft2
+
+	RGB(a0, t0, t1, t2)
+
+	ret

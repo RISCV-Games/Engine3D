@@ -14,6 +14,8 @@
 .end_macro
 
 .macro RGB(%dest, %r, %g, %b)
+  andi %r, %r, 0x07
+  andi %g, %g, 0x07
   li %dest, 0
   or %dest, %dest, %b
   slli %dest, %dest, 3
